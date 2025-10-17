@@ -23,13 +23,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "20" # >=20.8.1
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "21"
+      - name: Debug - list root files (optional)
+        run: |
+          echo "PWD: $(pwd)"
+          ls -la
+
+      - name: Install root devDependencies
+        run: |
+          # prefer npm ci if package-lock.json exists
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
 
       - name: Ensure backend mvnw is executable
         run: chmod +x backend/mvnw || true

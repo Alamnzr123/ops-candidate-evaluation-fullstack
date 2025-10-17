@@ -12,7 +12,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "cd backend && chmod +x mvnw || true && ./mvnw -q -DskipTests -DgenerateBackupPoms=false versions:set -DnewVersion=${nextRelease.version} -DgenerateBackupPoms=false"
+        "prepareCmd": "chmod +x backend/mvnw || true && cd backend && ./mvnw -q -DskipTests -DgenerateBackupPoms=false versions:set -DnewVersion=${nextRelease.version} -DgenerateBackupPoms=false && cd .. && cd ops-candidate-evaluation-frontend && npm version ${nextRelease.version} --no-git-tag-version && cd .."
       }
     ],
     [
