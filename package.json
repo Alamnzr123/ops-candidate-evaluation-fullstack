@@ -12,5 +12,18 @@
   },
   "engines": {
     "node": ">=20.8.1"
+  },
+  "scripts": {
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down -v",
+    "docker:build": "docker compose build --no-cache",
+    "docker:build:backend": "docker compose build --no-cache backend",
+    "docker:build:frontend": "docker compose build --no-cache frontend",
+    "docker:ps": "docker compose ps",
+    "docker:logs": "docker compose logs -f",
+    "docker:logs:backend": "docker compose logs -f backend",
+    "docker:logs:frontend": "docker compose logs -f frontend",
+    "docker:exec:backend": "docker compose exec backend sh",
+    "docker:exec:frontend": "docker compose exec frontend sh"
   }
 }
