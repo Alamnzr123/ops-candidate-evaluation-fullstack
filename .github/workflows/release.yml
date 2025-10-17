@@ -8,6 +8,8 @@ on:
 permissions:
   contents: write
   packages: write
+  issues: write
+  pull-requests: write
 
 jobs:
   release:
@@ -23,34 +25,11 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Setup Java (for maven wrapper)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
-
-      - name: Install root devDependencies (try ci, fallback & generate lockfile)
-        run: |
-          echo "Working dir: $PWD"
-          # If lockfile exists use npm ci for reproducible installs
-          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ] || [ -f yarn.lock ]; then
-            echo "Lockfile found, running npm ci"
-            npm ci
-          else
-            echo "No lockfile found, running npm install and generating package-lock.json"
-            npm install
-            # generate package-lock.json only (idempotent)
-            npm install --package-lock-only || true
-            # commit & push lockfile if new/changed
-            git add package-lock.json || true
-            if ! git diff --staged --quiet; then
-              git commit -m "chore(deps): add/update package-lock.json [skip ci]" || true
-              # push back to the same branch; uses checkout persisted credentials
-              git push origin HEAD:${{ github.ref }} || true
-            else
-              echo "No package-lock changes to commit"
-            fi
-          fi
 
       - name: Ensure backend mvnw is executable
         run: chmod +x backend/mvnw || true
@@ -62,5 +41,5 @@ jobs:
 
       - name: Run semantic-release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_TOKEN || secrets.GITHUB_TOKEN }}
         run: npx semantic-release
