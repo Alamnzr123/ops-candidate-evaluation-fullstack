@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.0.1...v1.1.0) (2025-10-17)
+
+
+### Features
+
+* add docker file, remove unused code, add nginx.conf ([ff9caa6](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/commit/ff9caa6aba5873f79361f53af792d02bec663c42))
+
 ## [1.0.1](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.0.0...v1.0.1) (2025-10-17)
 
 
