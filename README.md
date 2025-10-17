@@ -1,134 +1,256 @@
-# Ops Candidate Evaluation — Fullstack App (React JS + Spring Boot)
+# Ops Candidate Evaluation — Fullstack
 
-This repository contains a sample candidate evaluation project using React (Vite + TypeScript) for the frontend and Spring Boot (Java + Spring Data/JdbcTemplate) for the backend. It includes data import helpers, raw SQL query endpoints, API call logging, and a minimal CRUD UI.
+One-file README combining backend, frontend, Docker, CI and API usage.
+
+---
+
+## Summary
+
+Fullstack App - Demo Candidate Evaluation :
+
+- Backend: Spring Boot (Maven, Java 21)
+- Frontend: React + Vite + TypeScript
+- DB: PostgreSQL (or Docker-provided)
+- Features: data import (XLSX), CRUD APIs, complex SQL query endpoints, CI and automated releases
 
 Repository layout
 
-- backend/
-  - src/main/java/... — Spring Boot app, entities, repositories, services, controllers
-  - src/main/resources/application.properties — DB and app properties
-  - src/main/resources/db/schema.sql — PostgreSQL DDL (BIGSERIAL)
-  - src/main/resources/\* — other resources (import runner reads sample-project)
-  - mvnw / pom.xml — build and dependencies
-- ops-candidate-evaluation-frontend/
-  - src/ — React + TypeScript UI, API client, CRUD pages, Query page
-  - .env.local — Vite client environment (VITE_API_BASE_URL)
-- sample-project/
-  - department.xlsx, employee.xlsx, location.xlsx, tier.xlsx — provided data files
-- screenshots/
-  - (successful import)
+- `backend/` — Spring Boot app (Maven)
+- `ops-candidate-evaluation-frontend/` — Vite + React frontend
+- `sample-project/` — sample import XLSX files
+- `screenshots/` — UI / import screenshots (add images here)
+- `docker-compose.yml` — docker-compose to run db + backend + frontend
+- `.github/workflows/` — CI and release workflows
+- `package.json`, `.releaserc.json` (root) — semantic-release config
 
-Quickstart — Backend (Windows PowerShell)
+---
 
-1. Ensure prerequisites:
-   - Java 21
-   - PostgreSQL running
-2. Create database (adjust user/password/DB name):
+## Prerequisites (local)
 
-```powershell
-$env:PGPASSWORD="your_db_password"
-psql -h localhost -U postgres -c "CREATE DATABASE ops_evaluation;"
-```
+- Docker Desktop (recommended)
+- Node.js >= 20.8.1 (dev + semantic-release)
+- Java 17+ / 21 (for local backend dev) and Maven (optional, wrapper included)
+- PostgreSQL (if you don't use Docker)
 
-3. Place sample Excel files where the import runner expects (default):
+---
 
-   - F:\ops-candidate-evalutation\sample-project
-     Or set `app.import.path` as shown below.
+## Quick start (Docker, recommended)
 
-4. Configure connection (edit backend/src/main/resources/application.properties or pass via -D):
+From repo root in PowerShell or bash:
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/ops_evaluation
-spring.datasource.username=postgres
-spring.datasource.password=your_db_password
-spring.jpa.hibernate.ddl-auto=update
-app.import.path=F:/ops-candidate-evalutation/sample-project
-```
+1. Build & start:
+   npm run docker:up
 
-5. Run backend (Maven wrapper):
+   # or
 
-```powershell
-cd F:\ops-candidate-evalutation\backend
-.\mvnw.cmd spring-boot:run
-# or build jar
-.\mvnw.cmd clean package
-java -Dspring.datasource.url="jdbc:postgresql://localhost:5432/ops_evaluation" `
-     -Dspring.datasource.username=postgres `
-     -Dspring.datasource.password=your_db_password `
-     -Dapp.import.path="F:/ops-candidate-evalutation/sample-project" -jar target\*.jar
-```
+   docker compose up -d --build
+
+2. Check status / logs:
+   npm run docker:ps
+   npm run docker:logs:backend
+   npm run docker:logs:frontend
+
+3. Open apps:
+
+   - Frontend UI: http://localhost:5173
+   - Backend API: http://localhost:8080/api
+
+4. Stop & remove:
+   npm run docker:down
+   # or
+   docker compose down -v
 
 Notes:
 
-- The app includes a CommandLineRunner importer that reads the XLSX files and inserts into tables.
-- If you prefer to run DDL manually, execute:
+- `docker-compose.yml` mounts `./sample-project` into the backend container at `/import/sample-project` and sets `APP_IMPORT_PATH` so the automatic importer can read sample files.
+- Frontend built image serves static files via nginx. Built UI uses `VITE_API_BASE_URL=/api` by default and nginx proxies `/api` to the backend service.
+
+---
+
+## Local development
+
+Backend (Windows PowerShell)
+
+1. Edit `backend/src/main/resources/application.properties` or pass properties at runtime.
+2. Run:
+
+   ```powershell
+   cd F:\ops-candidate-evalutation\backend
+   .\mvnw.cmd spring-boot:run
+   ```
+
+3. Build jar:
 
 ```powershell
-psql -h localhost -U postgres -d ops_evaluation -f "F:\ops-candidate-evalutation\backend\src\main\resources\db\schema.sql"
+   .\mvnw.cmd clean package
+java -Dspring.datasource.url="jdbc:postgresql://localhost:5432/ops_evaluation" `
+     -Dspring.datasource.username=postgres `
+     -Dspring.datasource.password=your_pw -jar target\*.jar
 ```
 
-CORS and API
-
-- Backend exposes REST endpoints under `/api/*`. Example resources:
-  - GET/POST/PUT/DELETE /api/employee
-  - GET/POST/PUT/DELETE /api/department
-  - GET/POST/PUT/DELETE /api/location
-  - GET/POST/PUT/DELETE /api/tier
-- Complex queries:
-  - GET /api/query/q1
-  - GET /api/query/q2
-  - GET /api/query/q3
-- The app logs every API call to `api_call_history`.
-
-If you run the frontend dev server (Vite) at http://localhost:5173, the backend config includes CORS mapping allowing that origin by default. For production, restrict origins.
-
-Quickstart — Frontend (Windows PowerShell)
+Frontend (Windows PowerShell)
 
 1. Ensure Node.js (16+) installed.
 2. Set client env (Vite reads .env.local):
-
-```text
-# ops-candidate-evaluation-frontend/.env.local
-VITE_API_BASE_URL=http://localhost:8080
-```
-
+   ```text
+   # ops-candidate-evaluation-frontend/.env.local
+   VITE_API_BASE_URL=http://localhost:8080
+   ```
 3. Start dev server:
+   ```powershell
+   cd F:\ops-candidate-evalutation\ops-candidate-evaluation-frontend
+   npm install
+   npm run dev
+   # Open http://localhost:5173
+   ```
+
+---
+
+## Docker build/run commands (npm scripts)
+
+`npm run docker:up -> docker compose up -d --build`
+`npm run docker:down -> docker compose down -v`
+`npm run docker:build -> docker compose build --no-cache`
+`npm run docker:logs -> tail all logs`
+`npm run docker:logs:backend -> tail backend logs`
+
+## Environment configuration (key variables)
+
+1. Backend
 
 ```powershell
-cd F:\ops-candidate-evalutation\ops-candidate-evaluation-frontend
-npm install
-npm run dev
-# Open http://localhost:5173
+SPRING_DATASOURCE_URL — JDBC URL (e.g. jdbc:postgresql://db:5432/ops_evaluation)
+SPRING_DATASOURCE_USERNAME — DB user
+SPRING_DATASOURCE_PASSWORD — DB password
+APP_IMPORT_PATH — path to sample files inside container (default /import/sample-project)
+APP_IMPORT_ENABLED — toggle automatic import runner ("true"/"false")
 ```
 
-Frontend notes
+2. Frontend
 
-- API client uses VITE_API_BASE_URL to build requests to backend.
-- CRUD pages for employee/department/location/tier are in `src/pages/*`.
-- Query page calls `/api/query/q1|q2|q3` and renders results.
+```powershell
+VITE_API_BASE_URL — API base URL used by frontend at build time
+For dev: http://localhost:8080
+For production container build: /api (so nginx can proxy)
+```
 
-Troubleshooting
+3. CI / Release
 
-- Error: "database ... does not exist" → create the DB or fix `spring.datasource.url`.
-- Error: CORS blocked from origin → ensure backend `WebConfig.addCorsMappings` includes the Vite origin or use `@CrossOrigin` on controllers.
-- If you see HTML ("Unexpected token '<'") when fetching JSON — the request reached the frontend dev server (proxy/missing base URL). Confirm `VITE_API_BASE_URL` and restart Vite.
+```powershell
+GITHUB_TOKEN (or PERSONAL_TOKEN) must be configured in repo secrets for semantic-release and push permissions.
+```
 
-Files of interest (high level)
+## API — endpoints & examples
 
-- backend:
-  - BackendApplication.java (main)
-  - model/\*.java (entities: Employee, Department, Location, Tier, ApiCallHistory)
-  - repository/\*.java
-  - service/\*.java
-  - controller/\*.java (CRUD controllers + QueryController)
-  - config/ApiLoggingInterceptor.java, WebConfig.java, GlobalExceptionHandler.java
-  - importer/DataImportRunner.java
-- frontend:
-  - src/api.ts (typed API client)
-  - src/types.ts (TS types for backend models)
-  - src/components/CrudPage.tsx (generic CRUD UI, typed)
-  - src/pages/\* (EmployeePage, DepartmentPage, LocationPage, TierPage, QueryPage)
-  - .env.local (VITE_API_BASE_URL)
+Base URL: `http://localhost:8080` (or container backend service)
+
+CRUD resources (JSON)
+
+- Employees
+
+`GET /api/employee -> list employees`
+`GET /api/employee/{id} -> get by id`
+`POST /api/employee -> create (JSON body)`
+`PUT /api/employee/{id} -> update (JSON body)`
+`DELETE /api/employee/{id} -> delete`
+
+- Departments
+
+`GET /api/department`
+`GET /api/department/{id}`
+`POST /api/department`
+`PUT /api/department/{id}`
+`DELETE /api/department/{id}`
+
+- Locations
+
+`GET /api/location`
+`GET /api/location/{id}`
+`POST /api/location`
+`PUT /api/location/{id}`
+`DELETE /api/location/{id}`
+
+- Tiers
+
+  `GET /api/tier`
+  `GET /api/tier/{id}`
+  `POST /api/tier`
+  `PUT /api/tier/{id}`
+  `DELETE /api/tier/{id}`
+
+- Complex query endpoints (return list of objects)
+
+  `GET /api/query/q1 -> cumulative salary per employee (per dept)`
+  `GET /api/query/q2 -> department analysis by location`
+  `GET /api/query/q3 -> salary ranking & gap`
+
+- Health / Actuator (if enabled)
+
+  `GET /actuator/health`
+
+- Examples (curl)
+
+  1. List employees:
+
+```powershell
+curl -sS http://localhost:8080/api/employee | jq
+```
+
+2. Create employee (example):
+
+```powershell
+curl -sS -X POST http://localhost:8080/api/employee \
+  -H "Content-Type: application/json" \
+  -d '{
+    "emp_no": "E123",
+    "name": "Alice Example",
+    "dept_code": "D01",
+    "location_id": 1,
+    "position": "Engineer",
+    "salary": 65000
+  }' | jq
+```
+
+3. Run query q1:
+
+```powershell
+  curl -sS http://localhost:8080/api/query/q1 | jq
+```
+
+If frontend is served at http://localhost:5173, and VITE_API_BASE_URL is set to /api in the built frontend + nginx proxy, browser requests will be relative (/api/...) and proxied to backend.
+
+---
+
+## Data import
+
+- Put XLSX files into sample-project/ at repo root.
+- Docker compose mounts that folder into backend at /import/sample-project and sets APP_IMPORT_PATH accordingly.
+- The import runner reads the files and inserts data; control with APP_IMPORT_ENABLED.
+
+## CI & Releases
+
+- CI: .github/workflows/ci.yml builds backend and frontend, runs tests (uses Docker DB for backend tests).
+- Releases: semantic-release configured at repo root:
+
+1.  Requires Node >=20.8.1 on runner
+2.  semantic-release will bump backend pom.xml and frontend package.json, commit and create a GitHub Release
+3.  Ensure GITHUB_TOKEN / PERSONAL_TOKEN has repo write permissions and is configured in Actions
+
+## Troubleshooting
+
+- "Unexpected token '<'" when fetching JSON → request returned HTML (dev server index). Fix API base: set `VITE_API_BASE_URL` correctly or use relative /api.
+
+- CORS errors → backend must enable CORS for Vite origin (`http://localhost:5173`) or use nginx proxy for built frontend.
+
+- Browser fails to resolve hostname `backend` → this name exists only inside Docker network. Use localhost for host-based dev or build frontend with `/api` and let nginx proxy inside docker-compose.
+
+- Frontend shows nginx `502 Bad Gateway` → nginx couldn't reach backend. Check `docker compose ps` and `docker compose logs backend`. Ensure backend is healthy and listening on `8080`.
+
+- VS Code: `BackendApplication.java` is a non-project `file` → open the backend folder as a Maven project or import Java projects in VS Code and ensure pom.xml exists at `backend/pom.xml`.
+
+- Maven tests fail due to import runner → disable runner during tests using `@Profile("!test")` on runner or set `app.import.enabled=false` in `src/test/resources/application.properties`.
+
+---
 
 Screenshots
 
@@ -154,7 +276,9 @@ Screenshots
 
   ![Tier Data](screenshot/Tier_1.png)
 
-Contribution and notes
+---
+
+## Contribution and notes
 
 - This repo is a candidate evaluation sample. It intentionally uses plain SQL for complex queries (no window functions).
 - For production hardening: restrict CORS, add authentication, validate inputs, enable structured logging and monitoring, and move sensitive settings to secret store.

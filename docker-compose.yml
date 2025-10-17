@@ -22,8 +22,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ops_evaluation
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
-      # optional: control importer
-      APP_IMPORT_ENABLED: "true"
+      # tell the app where sample files live
+      APP_IMPORT_PATH: /import/sample-project
+      # optional toggle to enable/disable automatic import runner
+      APP_IMPORT_ENABLED: "false"
+    # mount sample-project from host into container so you can update files without rebuilding
+    volumes:
+      - ./sample-project:/import/sample-project:ro
     depends_on:
       db:
         condition: service_healthy
