@@ -90,9 +90,18 @@ jobs:
           node-version: 18
           cache: "npm"
 
-      - name: Install dependencies
+      - name: Install dependencies (try ci, fallback to install)
         working-directory: ${{ env.FRONTEND_DIR }}
-        run: npm ci
+        run: |
+          echo "Using working dir: $PWD"
+          # Try fast, deterministic install if lockfile exists; otherwise install and generate a lockfile.
+          if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ] || [ -f yarn.lock ]; then
+            npm ci
+          else
+            npm install
+            # optionally generate a package-lock for reproducible builds:
+            npm install --package-lock-only || true
+          fi
 
       - name: Lint (if available)
         working-directory: ${{ env.FRONTEND_DIR }}
