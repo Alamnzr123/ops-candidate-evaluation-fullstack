@@ -16,10 +16,7 @@ type Props<T> = {
 
 type CreateMarker = { __isCreating: true };
 
-/**
- * Generic CRUD page. T is the item shape (use `CrudPage<MyType>` where convenient).
- */
-export default function CrudPage<T extends Record<string, any> = any>({
+export default function CrudPage<T extends Record<string, unknown> = Record<string, unknown>>({
   resource,
   columns,
   title,
@@ -29,22 +26,26 @@ export default function CrudPage<T extends Record<string, any> = any>({
   const idKey = (idField ?? defaultId) as Extract<keyof T, string>;
 
   const [items, setItems] = useState<T[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState<number>(1);
   const pageSize = 10;
 
   const [editing, setEditing] = useState<T | CreateMarker | null>(null);
-  const [form, setForm] = useState<Partial<T>>({});
+  const initialFormState = columns.reduce((acc, col) => {
+    acc[col.key] = undefined;
+    return acc;
+  }, {} as Partial<T>);
+  const [form, setForm] = useState<Partial<T>>(initialFormState);
 
-  async function load() {
+  async function load(): Promise<void> {
     setLoading(true);
     setError(null);
     try {
       const data = (await apiList<T>(resource)) ?? [];
       setItems(Array.isArray(data) ? data : []);
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
+    } catch (e) {
+      setError((e as Error)?.message ?? String(e));
     } finally {
       setLoading(false);
     }
@@ -55,43 +56,48 @@ export default function CrudPage<T extends Record<string, any> = any>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resource]);
 
-  function startCreate() {
-    setForm({});
+  function startCreate(): void {
+    setForm(initialFormState);
     setEditing({ __isCreating: true } as CreateMarker);
   }
-  function startEdit(it: T) {
-    setForm({ ...it });
+  function startEdit(it: T): void {
+    // shallow copy for editing
+    setForm({ ...(it as Record<string, unknown>) } as Partial<T>);
     setEditing(it);
   }
-  function cancelEdit() {
+  function cancelEdit(): void {
     setEditing(null);
     setForm({});
   }
 
-  async function save() {
+  async function save(): Promise<void> {
     try {
       const isCreate = editing && (editing as CreateMarker).__isCreating;
-      const idValue = !isCreate ? (editing as any)[idKey as string] : undefined;
+      const idValue = !isCreate ? (editing as T)[idKey as keyof T] : undefined;
       if (idValue !== undefined && idValue !== null) {
-        await apiUpdate<T, Partial<T>>(resource, idValue, form);
+        await apiUpdate<T, Partial<T>>(resource, String(idValue), form);
       } else {
         await apiCreate<T, Partial<T>>(resource, form);
       }
       await load();
       cancelEdit();
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
+    } catch (e) {
+      setError((e as Error)?.message ?? String(e));
     }
   }
 
-  async function remove(it: T) {
-    const idValue = (it as any)[idKey as string];
-    if (!confirm(`Delete ${resource} ${idValue}?`)) return;
+  async function remove(it: T): Promise<void> {
+    const idValue = (it as Record<string, unknown>)[idKey] as number | string | undefined;
+    if (!confirm(`Delete ${resource} ${String(idValue)}?`)) return;
     try {
-      await apiDelete(resource, idValue);
-      await load();
-    } catch (e: any) {
-      setError(e?.message ?? String(e));
+      if (idValue !== undefined) {
+        await apiDelete(resource, String(idValue));
+        await load();
+      } else {
+        setError('Unable to delete: missing id');
+      }
+    } catch (e) {
+      setError((e as Error)?.message ?? String(e));
     }
   }
 
@@ -123,12 +129,14 @@ export default function CrudPage<T extends Record<string, any> = any>({
         </thead>
         <tbody>
           {pageItems.map((it) => {
-            const key = (it as any)[idKey as string] ?? JSON.stringify(it);
+            const keyValue = (it as Record<string, unknown>)[idKey];
+            const rowKey = keyValue !== undefined ? String(keyValue) : JSON.stringify(it);
             return (
-              <tr key={String(key)}>
-                {columns.map((c) => (
-                  <td key={c.key}>{String((it as any)[c.key] ?? '')}</td>
-                ))}
+              <tr key={rowKey}>
+                {columns.map((c) => {
+                  const cell = (it as Record<string, unknown>)[c.key];
+                  return <td key={c.key}>{cell === undefined || cell === null ? '' : String(cell)}</td>;
+                })}
                 <td>
                   <button onClick={() => startEdit(it)}>Edit</button>
                   <button onClick={() => remove(it)} style={{ marginLeft: 6 }}>
@@ -160,18 +168,26 @@ export default function CrudPage<T extends Record<string, any> = any>({
 
       {editing !== null && (
         <div style={{ marginTop: 12, padding: 8, border: '1px solid #ccc' }}>
-          <h3>{(editing as any)[idKey as string] ? 'Edit' : 'Create'}</h3>
+          <h3>{(editing as Record<string, unknown>)[idKey] ? 'Edit' : 'Create'}</h3>
           <div style={{ display: 'grid', gap: 8 }}>
             {columns
               .filter((c) => c.key !== idKey)
               .map((col) => {
                 const key = col.key;
+                const value = (form as Record<string, unknown>)[key];
                 return (
                   <label key={key}>
                     <div style={{ fontSize: 12 }}>{col.label}</div>
                     <input
-                      value={(form as any)[key] ?? ''}
-                      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                      value={value === undefined || value === null ? '' : String(value)}
+                      onChange={(e) =>
+                        setForm((prev) => {
+                          const next = { ...(prev as Record<string, unknown>) };
+                          // store as string — backend conversion expected
+                          next[key] = e.target.value;
+                          return next as Partial<T>;
+                        })
+                      }
                       style={{ width: '100%' }}
                     />
                   </label>
