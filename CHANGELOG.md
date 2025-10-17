@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.0.0...v1.0.1) (2025-10-17)
+
+
+### Bug Fixes
+
+* update permission for github action ([7c57198](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/commit/7c57198a48b7ed400e943300b6333131e937b53b))
+* update releaserc.json file ([8d299d6](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/commit/8d299d6d34e87ffa457fb2d3ba907f6e2e4043e8))
+
 # 1.0.0 (2025-10-17)
 
 
