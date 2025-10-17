@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { apiQuery } from '../api';
 
 export default function QueryPage() {

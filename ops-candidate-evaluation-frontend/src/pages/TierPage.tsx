@@ -1,4 +1,3 @@
-import React from 'react';
 import CrudPage, { type Column } from '../components/CrudPage';
 import type { Tier } from '../types';
 
@@ -9,5 +8,5 @@ const columns: Column<Tier>[] = [
 ];
 
 export default function TierPage() {
-  return <CrudPage<Tier> resource="tier" columns={columns} title="Tiers" idField="id" />;
+  return <CrudPage<Tier & Record<string, unknown>> resource="tier" columns={columns} title="Tiers" idField="id" />;
 }

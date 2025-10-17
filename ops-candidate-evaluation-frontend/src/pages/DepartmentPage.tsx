@@ -9,5 +9,5 @@ const columns: Column<Department>[] = [
 ];
 
 export default function DepartmentPage() {
-  return <CrudPage<Department> resource="department" columns={columns} title="Departments" idField="id" />;
+  return <CrudPage<Department & Record<string, unknown>> resource="department" columns={columns} title="Departments" idField="id" />;
 }

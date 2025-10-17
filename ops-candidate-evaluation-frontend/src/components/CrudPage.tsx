@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiList, apiCreate, apiUpdate, apiDelete } from '../api';
 
 export type Column<T> = {
@@ -61,7 +61,6 @@ export default function CrudPage<T extends Record<string, unknown> = Record<stri
     setEditing({ __isCreating: true } as CreateMarker);
   }
   function startEdit(it: T): void {
-    // shallow copy for editing
     setForm({ ...(it as Record<string, unknown>) } as Partial<T>);
     setEditing(it);
   }

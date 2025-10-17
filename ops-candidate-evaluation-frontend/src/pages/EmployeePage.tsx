@@ -13,5 +13,5 @@ const columns: Column<Employee>[] = [
 ];
 
 export default function EmployeePage() {
-  return <CrudPage<Employee> resource="employee" columns={columns} title="Employees" idField="id" />;
+  return <CrudPage<Employee & Record<string, unknown>> resource="employee" columns={columns} title="Employees" idField="id" />;
 }

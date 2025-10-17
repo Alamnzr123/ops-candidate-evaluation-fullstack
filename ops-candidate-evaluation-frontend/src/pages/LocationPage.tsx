@@ -1,4 +1,3 @@
-import React from 'react';
 import CrudPage, {type Column } from '../components/CrudPage';
 import type { Location } from '../types';
 
@@ -9,5 +8,5 @@ const columns: Column<Location>[] = [
 ];
 
 export default function LocationPage() {
-  return <CrudPage<Location> resource="location" columns={columns} title="Locations" idField="id" />;
+  return <CrudPage<Location & Record<string, unknown>> resource="location" columns={columns} title="Locations" idField="id" />;
 }
