@@ -40,6 +40,25 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      # NEW: generate package-lock.json for the frontend and commit if changed
+      - name: Generate & commit frontend package-lock.json
+        working-directory: ops-candidate-evaluation-frontend
+        env:
+          GIT_AUTHOR_NAME: "github-actions[bot]"
+          GIT_AUTHOR_EMAIL: "github-actions[bot]@users.noreply.github.com"
+        run: |
+          # generate package-lock only (does not install node_modules)
+          npm install --package-lock-only || npm install --package-lock-only
+          cd ..
+          git add ops-candidate-evaluation-frontend/package-lock.json
+          # commit and push only if there are changes
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(frontend): add/update package-lock.json [skip ci]" || true
+            git push origin HEAD:${{ github.ref }} || true
+          else
+            echo "No package-lock changes to commit"
+          fi
+
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
