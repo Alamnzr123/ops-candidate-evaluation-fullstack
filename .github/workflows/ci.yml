@@ -48,13 +48,14 @@ jobs:
 
       - name: Build backend (Maven)
         working-directory: ${{ env.BACKEND_DIR }}
+        env:
+          SPRING_DATASOURCE_URL: "jdbc:postgresql://127.0.0.1:5432/ops_evaluation"
+          SPRING_DATASOURCE_USERNAME: "postgres"
+          SPRING_DATASOURCE_PASSWORD: "postgres"
+          HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
         run: |
           chmod +x mvnw || true
-          ./mvnw -B -DskipTests=false \
-            -Dspring.datasource.url="jdbc:postgresql://127.0.0.1:5432/ops_evaluation" \
-            -Dspring.datasource.username=postgres \
-            -Dspring.datasource.password=postgres \
-            clean verify
+          ./mvnw -B clean verify
 
       - name: Upload backend artifact
         uses: actions/upload-artifact@v4
