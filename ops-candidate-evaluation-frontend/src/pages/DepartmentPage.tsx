@@ -1,4 +1,3 @@
-import React from 'react';
 import CrudPage, {type Column } from '../components/CrudPage';
 import type { Department } from '../types';
 
