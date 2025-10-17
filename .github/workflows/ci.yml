@@ -15,18 +15,6 @@ jobs:
   backend:
     name: Backend - build & test
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: ops_evaluation
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,14 +25,16 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      - name: Start Postgres container
+        run: |
+          docker run --name ci-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_USER=postgres -e POSTGRES_DB=ops_evaluation -p 5432:5432 -d postgres:15
+          echo "Started Postgres container"
       - name: Install psql client
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-
-      - name: Wait for Postgres and create DB
+      - name: Wait for Postgres to be ready
         run: |
-          echo "Waiting for Postgres to accept connections..."
           for i in {1..60}; do
             if pg_isready -h 127.0.0.1 -p 5432 -U postgres >/dev/null 2>&1; then
               echo "Postgres ready"
@@ -53,11 +43,17 @@ jobs:
             echo "Postgres not ready yet ($i/60). Sleeping 2s..."
             sleep 2
           done
-          # verify and create DB if missing (Postgres doesn't support IF NOT EXISTS for CREATE DATABASE)
+          # diagnostics if still not ready
+          if ! pg_isready -h 127.0.0.1 -p 5432 -U postgres >/dev/null 2>&1; then
+            echo "Postgres failed to start - showing docker logs"
+            docker logs ci-postgres || true
+            exit 1
+          fi
+      - name: Create database (if missing)
+        run: |
           export PGPASSWORD=postgres
           EXISTS=$(psql -h 127.0.0.1 -U postgres -tAc "SELECT 1 FROM pg_database WHERE datname='ops_evaluation';")
           if [ "$EXISTS" != "1" ]; then
-            echo "Creating database ops_evaluation"
             psql -h 127.0.0.1 -U postgres -c "CREATE DATABASE ops_evaluation;"
           else
             echo "Database ops_evaluation already exists"
