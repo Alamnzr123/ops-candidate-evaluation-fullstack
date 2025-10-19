@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.3.0...v1.4.0) (2025-10-19)
+
+
+### Features
+
+* add unit test(using vitest) ([603563a](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/commit/603563a80bbd560fa97b41c4107a6be9302d1226))
+
 # [1.3.0](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.2.0...v1.3.0) (2025-10-19)
 
 
