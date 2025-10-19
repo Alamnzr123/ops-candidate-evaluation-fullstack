@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.1.1...v1.2.0) (2025-10-19)
+
+
+### Features
+
+* add mobile design and export Postgresql database ([ab0184c](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/commit/ab0184c69ad6e572c491c04825fa56a87eaf1985))
+
 ## [1.1.1](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.1.0...v1.1.1) (2025-10-17)
 
 
