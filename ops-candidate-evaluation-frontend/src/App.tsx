@@ -9,15 +9,15 @@ import './App.css'
 export default function App() {
     const [tab, setTab] = useState<'employees'|'departments'|'locations'|'tiers'|'queries'>('employees');
     return (
-        <div style={{ fontFamily: 'Arial, sans-serif' }}>
-            <header style={{ padding: 12, borderBottom: '1px solid #ddd', display: 'flex', gap: 8 }}>
-                <button onClick={() => setTab('employees')}>Employees</button>
-                <button onClick={() => setTab('departments')}>Departments</button>
-                <button onClick={() => setTab('locations')}>Locations</button>
-                <button onClick={() => setTab('tiers')}>Tiers</button>
-                <button onClick={() => setTab('queries')}>Queries</button>
+        <div className="app-root">
+            <header className="app-header" role="navigation" aria-label="Main navigation">
+                <button className="nav-button" aria-pressed={tab === 'employees'} onClick={() => setTab('employees')}>Employees</button>
+                <button className="nav-button" aria-pressed={tab === 'departments'} onClick={() => setTab('departments')}>Departments</button>
+                <button className="nav-button" aria-pressed={tab === 'locations'} onClick={() => setTab('locations')}>Locations</button>
+                <button className="nav-button" aria-pressed={tab === 'tiers'} onClick={() => setTab('tiers')}>Tiers</button>
+                <button className="nav-button" aria-pressed={tab === 'queries'} onClick={() => setTab('queries')}>Queries</button>
             </header>
-            <main>
+            <main className="app-main">
                 {tab === 'employees' && <EmployeePage />}
                 {tab === 'departments' && <DepartmentPage />}
                 {tab === 'locations' && <LocationPage />}

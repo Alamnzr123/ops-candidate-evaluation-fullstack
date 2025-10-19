@@ -1,8 +1,130 @@
+:root {
+  --accent: #1976d2;
+  --muted: #666;
+  --gap: 8px;
+  --pad: 12px;
+}
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+}
+
+.app-root {
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  padding: var(--pad);
+  display: flex;
+  gap: var(--gap);
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nav-button {
+  background: transparent;
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+.nav-button[aria-pressed="true"] {
+  background: var(--accent);
+  color: white;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.app-main {
+  padding: calc(var(--pad) * 1.25);
+  flex: 1 1 auto;
+}
+
+.responsive-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+button {
+  font-family: inherit;
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    gap: 6px;
+    padding: 8px;
+  }
+  .nav-button {
+    padding: 8px 10px;
+    height: 44px;
+    font-size: 15px;
+  }
+  .app-main {
+    padding: 12px;
+  }
+
+  .app-header.wrap {
+    flex-wrap: wrap;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-header {
+    justify-content: flex-start;
+    overflow: visible;
+  }
+  .nav-button {
+    min-width: 110px;
+  }
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo {
