@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.2.0...v1.3.0) (2025-10-19)
+
+
+### Features
+
+* add swagger documentation and remove cross origin on controller file ([582051b](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/commit/582051bba0fe8debd8517aa30820687a1c9152f3))
+
 # [1.2.0](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.1.1...v1.2.0) (2025-10-19)
 
 
