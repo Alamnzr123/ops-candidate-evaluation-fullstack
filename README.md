@@ -10,8 +10,8 @@ Fullstack App - Demo Candidate Evaluation :
 
 - Backend: Spring Boot (Maven, Java 21)
 - Frontend: React + Vite + TypeScript
-- DB: PostgreSQL (or Docker-provided)
-- Features: data import (XLSX), CRUD APIs, complex SQL query endpoints, CI and automated releases
+- DB: PostgreSQL (Docker or local)
+- Features: XLSX data import runner, CRUD APIs, complex SQL query endpoints, Swagger (OpenAPI), frontend responsive UI, unit tests (Vitest), CI and automated releases
 
 Repository layout
 
@@ -52,8 +52,10 @@ From repo root in PowerShell or bash:
 
 3. Open apps:
 
-   - Frontend UI: http://localhost:5173
-   - Backend API: http://localhost:8080/api
+- Frontend UI: http://localhost:5173
+- Backend API: http://localhost:8080/api
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+- OpenAPI JSON: http://localhost:8080/v3/api-docs
 
 4. Stop & remove:
    npm run docker:down
@@ -67,6 +69,38 @@ Notes:
 
 ---
 
+## Importing your DB dump (`ops-evaluation.sql`)
+
+If `ops-evaluation.sql` is a plain SQL dump (placed at repo root), you can import it into the running Postgres container or into a local Postgres instance.
+
+1. Import into running Docker Postgres container:
+
+```powershell
+# replace <pg-service-name> with the container name from `docker compose ps`, commonly "opscandidateevalutation_db_1" or "db"
+docker compose ps
+# import from host into container
+cat ops-evaluation.sql | docker compose exec -T db psql -U postgres -d ops_evaluation
+```
+
+2. Import directly into local Postgres (host machine):
+
+```powershell
+# ensure database exists
+psql -U postgres -c "CREATE DATABASE ops_evaluation;"
+# import
+psql -U postgres -d ops_evaluation -f ops-evaluation.sql
+```
+
+3. Use provided script (if present)
+
+- Bash (Linux/WSL/macOS): `scripts/pg/import_db.sh ops-evaluation.sql` (set PGHOST/PGUSER/PGPASSWORD env vars)
+- PowerShell: `.\scripts\pg\import_db.ps1 -File .\ops-evaluation.sql -Host localhost -User postgres -Password yourpw -Database ops_evaluation`
+
+Notes:
+
+- If dump is custom format (`.dump`), use `pg_restore` instead of `psql`.
+- If docker Postgres is not named `db` in compose file, substitute the service name.
+
 ## Local development
 
 Backend (Windows PowerShell)
@@ -74,10 +108,13 @@ Backend (Windows PowerShell)
 1. Edit `backend/src/main/resources/application.properties` or pass properties at runtime.
 2. Run:
 
-   ```powershell
-   cd F:\ops-candidate-evalutation\backend
-   .\mvnw.cmd spring-boot:run
-   ```
+```powershell
+cd backend
+# run with Maven wrapper
+mvnw.cmd spring-boot:run
+# package
+mvnw.cmd clean package
+```
 
 3. Build jar:
 
@@ -103,6 +140,36 @@ Frontend (Windows PowerShell)
    npm run dev
    # Open http://localhost:5173
    ```
+
+---
+
+## Tests
+
+Frontend (Vitest)
+
+```powershell
+cd ops-candidate-evaluation-frontend
+npm install
+npm run test
+# interactive UI
+npm run test:ui
+```
+
+## Swagger / OpenAPI
+
+- Springdoc is configured in backend; UI available at:
+  - Swagger UI: http://localhost:8080/swagger-ui/index.html
+  - Raw Spec: http://localhost:8080/v3/api-docs
+- If /v3/api-docs returns 500, check backend logs for springdoc / Spring version mismatch. Use the springdoc starter version compatible with your Spring Boot.
+
+---
+
+## CORS
+
+Global CORS is configured in `backend/src/main/java/.../config/WebConfig.java`. For local dev with Vite:
+
+- Ensure `VITE_API_BASE_URL` is set to `http://localhost:8080` or use `/api` when using nginx proxy.
+- If CORS fails, confirm `allowedOriginPatterns` includes `http://localhost:*` and that the interceptor allows OPTIONS.
 
 ---
 
