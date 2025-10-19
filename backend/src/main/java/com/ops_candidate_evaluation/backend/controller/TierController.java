@@ -9,7 +9,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tier")
-@CrossOrigin(origins = "*")
 public class TierController {
     private final TierService service;
 

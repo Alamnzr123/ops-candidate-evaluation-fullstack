@@ -7,7 +7,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/query")
-@CrossOrigin(origins = "*") // temporary for dev; prefer specific origin in production
 public class QueryController {
 
     private final JdbcTemplate jdbc;
