@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.1.0...v1.1.1) (2025-10-17)
+
+
+### Bug Fixes
+
+* update readme and docker files ([b6f71a8](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/commit/b6f71a8f1d8b5864e2ce8c103c052b5747a160bf))
+
 # [1.1.0](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.0.1...v1.1.0) (2025-10-17)
 
 
