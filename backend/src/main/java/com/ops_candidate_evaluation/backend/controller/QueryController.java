@@ -19,10 +19,14 @@ public class QueryController {
     @GetMapping("/q1")
     public List<Map<String, Object>> query1() {
         String sql = ""
-                + "SELECT e.dept_code AS dept_code, e.emp_no AS emp_no, e.name AS emp_name, "
-                + "  (SELECT SUM(x.salary) FROM employee x "
-                + "    WHERE x.dept_code = e.dept_code AND x.emp_no <= e.emp_no) AS cumulative_salary "
+                + "SELECT e.dept_code AS dept_code, e.emp_no AS emp_no, e.name AS emp_name, cum.cumulative_salary "
                 + "FROM employee e "
+                + "JOIN ( "
+                + "  SELECT a.dept_code, a.emp_no, SUM(b.salary) AS cumulative_salary "
+                + "  FROM employee a "
+                + "  JOIN employee b ON b.dept_code = a.dept_code AND b.emp_no <= a.emp_no "
+                + "  GROUP BY a.dept_code, a.emp_no "
+                + ") cum ON cum.dept_code = e.dept_code AND cum.emp_no = e.emp_no "
                 + "ORDER BY e.dept_code, e.emp_no";
         return jdbc.queryForList(sql);
     }
@@ -31,18 +35,29 @@ public class QueryController {
     @GetMapping("/q2")
     public List<Map<String, Object>> query2() {
         String sql = ""
-                + "SELECT l.name AS location_name, "
-                + "  (SELECT d.name FROM department d "
-                + "     JOIN employee e2 ON d.code = e2.dept_code "
-                + "     WHERE e2.location_id = l.id "
-                + "     GROUP BY d.name "
-                + "     ORDER BY COUNT(*) DESC LIMIT 1) AS dept_with_most_employees, "
-                + "  (SELECT COUNT(*) FROM employee e3 "
-                + "     WHERE e3.location_id = l.id AND e3.dept_code = (SELECT d2.code FROM department d2 "
-                + "         JOIN employee e4 ON d2.code = e4.dept_code WHERE e4.location_id = l.id "
-                + "         GROUP BY d2.code ORDER BY COUNT(*) DESC LIMIT 1)) AS dept_employee_count, "
-                + "  (SELECT ROUND(AVG(e5.salary)::numeric,2) FROM employee e5 WHERE e5.location_id = l.id) AS avg_salary_of_lowest_dept "
-                + "FROM location l";
+                + "WITH dept_stats AS ( "
+                + "  SELECT e.location_id, l.name AS location_name, d.code AS dept_code, d.name AS dept_name, "
+                + "         COUNT(*) AS emp_count, ROUND(AVG(e.salary)::numeric,2) AS avg_salary "
+                + "  FROM employee e "
+                + "  JOIN department d ON d.code = e.dept_code "
+                + "  JOIN location l ON l.id = e.location_id "
+                + "  GROUP BY e.location_id, l.name, d.code, d.name "
+                + "), "
+                + "most AS ( "
+                + "  SELECT DISTINCT ON (location_id) location_id, dept_name AS dept_with_most_employees, emp_count AS dept_employee_count "
+                + "  FROM dept_stats "
+                + "  ORDER BY location_id, emp_count DESC "
+                + "), "
+                + "lowest AS ( "
+                + "  SELECT DISTINCT ON (location_id) location_id, avg_salary AS avg_salary_of_lowest_dept "
+                + "  FROM dept_stats "
+                + "  ORDER BY location_id, avg_salary ASC "
+                + ") "
+                + "SELECT l.name AS location_name, m.dept_with_most_employees, m.dept_employee_count, lo.avg_salary_of_lowest_dept "
+                + "FROM location l "
+                + "LEFT JOIN most m ON m.location_id = l.id "
+                + "LEFT JOIN lowest lo ON lo.location_id = l.id "
+                + "ORDER BY l.name";
         return jdbc.queryForList(sql);
     }
 
@@ -51,15 +66,32 @@ public class QueryController {
     @GetMapping("/q3")
     public List<Map<String, Object>> query3() {
         String sql = ""
+                + "WITH distinct_salaries AS ( "
+                + "  SELECT location_id, dept_code, salary FROM employee GROUP BY location_id, dept_code, salary "
+                + "), "
+                + "salary_rank AS ( "
+                + "  SELECT ds.location_id, ds.dept_code, ds.salary, 1 + COUNT(h.salary) AS salary_rank "
+                + "  FROM distinct_salaries ds "
+                + "  LEFT JOIN distinct_salaries h "
+                + "    ON h.location_id = ds.location_id AND h.dept_code = ds.dept_code AND h.salary > ds.salary "
+                + "  GROUP BY ds.location_id, ds.dept_code, ds.salary "
+                + "), "
+                + "next_salary AS ( "
+                + "  SELECT ds.location_id, ds.dept_code, ds.salary, MIN(h.salary) AS next_higher_salary "
+                + "  FROM distinct_salaries ds "
+                + "  LEFT JOIN distinct_salaries h "
+                + "    ON h.location_id = ds.location_id AND h.dept_code = ds.dept_code AND h.salary > ds.salary "
+                + "  GROUP BY ds.location_id, ds.dept_code, ds.salary "
+                + ") "
                 + "SELECT loc.name AS location_name, dep.name AS department_name, e.name AS employee_name, "
-                + "  e.position AS position_name, e.salary AS salary, "
-                + "  (1 + (SELECT COUNT(DISTINCT s.salary) FROM employee s "
-                + "        WHERE s.location_id = e.location_id AND s.dept_code = e.dept_code AND s.salary > e.salary)) AS salary_rank, "
-                + "  COALESCE((SELECT MAX(s2.salary) FROM employee s2 "
-                + "        WHERE s2.location_id = e.location_id AND s2.dept_code = e.dept_code AND s2.salary > e.salary) - e.salary, 0) AS salary_gap "
+                + "       e.position AS position_name, e.salary AS salary, "
+                + "       COALESCE(sr.salary_rank, 1) AS salary_rank, "
+                + "       COALESCE(ns.next_higher_salary - e.salary, 0) AS salary_gap "
                 + "FROM employee e "
                 + "LEFT JOIN department dep ON dep.code = e.dept_code "
                 + "LEFT JOIN location loc ON loc.id = e.location_id "
+                + "LEFT JOIN salary_rank sr ON sr.location_id = e.location_id AND sr.dept_code = e.dept_code AND sr.salary = e.salary "
+                + "LEFT JOIN next_salary ns ON ns.location_id = e.location_id AND ns.dept_code = e.dept_code AND ns.salary = e.salary "
                 + "ORDER BY loc.name, dep.name, e.salary DESC";
         return jdbc.queryForList(sql);
     }
