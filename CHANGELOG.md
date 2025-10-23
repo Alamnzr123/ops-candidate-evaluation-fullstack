@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.4.1...v1.4.2) (2025-10-23)
+
+
+### Bug Fixes
+
+* update readme file and sql optimize raw sql query ([0ed2d75](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/commit/0ed2d757d2aa672453ed48c1f4cbc54ee2881c49))
+
 ## [1.4.1](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.4.0...v1.4.1) (2025-10-23)
 
 
