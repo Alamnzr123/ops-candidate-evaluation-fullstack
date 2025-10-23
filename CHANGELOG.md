@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.4.0...v1.4.1) (2025-10-23)
+
+
+### Bug Fixes
+
+* update optimized raw-SQL with grouped aggregation and joins ([32af971](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/commit/32af971f1cb5087f9ab905664992e8b65869f842))
+
 # [1.4.0](https://github.com/Alamnzr123/ops-candidate-evaluation-fullstack/compare/v1.3.0...v1.4.0) (2025-10-19)
 
 
