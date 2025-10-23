@@ -101,6 +101,178 @@ Notes:
 - If dump is custom format (`.dump`), use `pg_restore` instead of `psql`.
 - If docker Postgres is not named `db` in compose file, substitute the service name.
 
+# Indexes and query tuning (Postgres)
+
+This document describes the indexes recommended for the backend raw-SQL queries (q1, q2, q3), how to apply them, how to verify they are used, and important caveats.
+
+## Why add indexes
+
+- Reduce full-table scans for large `employee` table.
+- Enable index-range scans for the cumulative-sum pattern (q1) and accelerate group/filter operations used by q2/q3.
+- Indexes help reads; they add storage and slow writes (INSERT/UPDATE/DELETE).
+
+## Recommended indexes
+
+Create these indexes on your PostgreSQL database. Adjust column names/types if your schema differs.
+
+Option A — non-blocking (production, may require manual checks):
+
+- Use `CONCURRENTLY` to avoid long table locks. Note: `CREATE INDEX CONCURRENTLY` cannot run inside a transaction.
+
+```sql
+CREATE INDEX CONCURRENTLY idx_employee_dept_empno
+  ON employee(dept_code, emp_no);
+
+CREATE INDEX CONCURRENTLY idx_employee_location_dept_salary
+  ON employee(location_id, dept_code, salary);
+
+CREATE INDEX CONCURRENTLY idx_employee_location
+  ON employee(location_id);
+
+CREATE INDEX CONCURRENTLY idx_department_code
+  ON department(code);
+```
+
+Option B — simple (may lock table briefly):
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_employee_dept_empno
+  ON employee(dept_code, emp_no);
+
+CREATE INDEX IF NOT EXISTS idx_employee_location_dept_salary
+  ON employee(location_id, dept_code, salary);
+
+CREATE INDEX IF NOT EXISTS idx_employee_location
+  ON employee(location_id);
+
+CREATE INDEX IF NOT EXISTS idx_department_code
+  ON department(code);
+```
+
+## Flyway migration (recommended)
+
+Place a migration file so indexes are created automatically for new deployments.
+
+Example migration file:
+
+```sql
+-- filepath: backend/src/main/resources/db/migration/V2__add_employee_indexes.sql
+-- Use CONCURRENTLY only if your Flyway config runs this migration outside a transaction.
+CREATE INDEX IF NOT EXISTS idx_employee_dept_empno
+  ON employee(dept_code, emp_no);
+
+CREATE INDEX IF NOT EXISTS idx_employee_location_dept_salary
+  ON employee(location_id, dept_code, salary);
+
+CREATE INDEX IF NOT EXISTS idx_employee_location
+  ON employee(location_id);
+
+CREATE INDEX IF NOT EXISTS idx_department_code
+  ON department(code);
+```
+
+Notes:
+
+- Flyway runs migrations inside transactions by default for Postgres. If you want `CONCURRENTLY`, configure Flyway to run that migration without a transaction or create the index manually.
+
+## Apply manually (Windows PowerShell + psql)
+
+Save SQL to `create_indexes.sql` and run:
+
+```powershell
+psql -h <host> -U <user> -d <dbname> -f "C:\path\to\create_indexes.sql"
+```
+
+Or run single command:
+
+```powershell
+psql -h <host> -U <user> -d <dbname> -c "CREATE INDEX IF NOT EXISTS idx_employee_dept_empno ON employee(dept_code, emp_no);"
+```
+
+## After creating indexes
+
+1. Refresh planner statistics:
+
+```sql
+ANALYZE employee;
+ANALYZE department;
+```
+
+2. Verify indexes exist:
+
+```sql
+SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'employee' OR tablename = 'department';
+-- OR in psql interactive:
+\di
+```
+
+3. Run EXPLAIN (ANALYZE, BUFFERS, VERBOSE) on the exact query strings for q1, q2, q3 to confirm index usage.
+
+Example EXPLAIN for q1 (equality variant):
+
+```sql
+EXPLAIN (ANALYZE, BUFFERS, VERBOSE)
+SELECT e.dept_code, e.emp_no, e.name,
+  (SELECT SUM(b.salary) FROM employee b WHERE b.dept_code = e.dept_code AND b.emp_no <= e.emp_no) AS cumulative_salary
+FROM employee e
+ORDER BY e.dept_code, e.emp_no;
+```
+
+Look for `Index Scan` or `Index Only Scan` on the inner lookup (the `b` side). If you see `Seq Scan`, check types/stats/size.
+
+## Common issues and quick fixes
+
+- Type mismatch: implicit casts prevent index use. Verify with:
+
+```sql
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name='employee' AND column_name IN ('dept_code','emp_no','salary');
+```
+
+If types differ (e.g. dept_code integer vs text), either:
+
+- normalize schema, or
+- create an index on the cast expression (e.g. ON ((dept_code::text), emp_no)).
+
+- NULL semantics: `IS NOT DISTINCT FROM` and certain expressions may prevent index-range scans. For best index usage prefer equality and handle NULLs explicitly (two-branch LATERAL or small scan for NULL-key rows).
+
+- Table small: planner chooses sequential scan for small tables — indexes matter on larger datasets.
+
+- CONCURRENTLY caveat: `CREATE INDEX CONCURRENTLY` cannot run inside transactions (Flyway default). Run separately or adjust Flyway settings.
+
+## When to use partial or expression indexes
+
+If many rows have NULL keys or common filters, consider partial indexes:
+
+```sql
+CREATE INDEX CONCURRENTLY idx_employee_loc_dept_salary_nonnull
+  ON employee(location_id, dept_code, salary)
+  WHERE location_id IS NOT NULL;
+```
+
+Or expression indexes if casts are frequent:
+
+```sql
+CREATE INDEX CONCURRENTLY idx_employee_dept_text_empno
+  ON employee((dept_code::text), emp_no);
+```
+
+## Verification / next steps
+
+- Run EXPLAIN for each query and paste the output if you want help interpreting it.
+- If planner still uses seq scans, include:
+  - EXPLAIN output,
+  - results of `SELECT indexdef FROM pg_indexes WHERE tablename='employee';`
+  - `information_schema.columns` types for `dept_code` and `emp_no`.
+
+## TL;DR
+
+- Create indexes that match your query predicates and ordering.
+- Refresh stats (ANALYZE).
+- Verify with EXPLAIN.
+- Adjust index shape or query if EXPLAIN shows seq scan.
+
 ## Local development
 
 Backend (Windows PowerShell)
